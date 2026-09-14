@@ -7,13 +7,15 @@ public class FirstPPM {
             FileWriter writer = new FileWriter("FirstPPM.ppm");
 
             writer.write("P3\n");
-            // Écriture des dimensions
-            // Écriture de la valeur maximal
-            // Écriture des pixels
-            // Première ligne : rouge, vert, bleu
-            // Deuxième ligne : jaune, blanc, noir
+            writer.write("3 2\n");       // largeur hauteur
+            writer.write("255\n");       // valeur max
 
-            writer.close(); // Fermeture du fichier
+            // Première ligne : rouge, vert, bleu
+            writer.write("255 0 0 0 255 0 0 0 255\n");
+            // Deuxième ligne : jaune, blanc, noir
+            writer.write("255 255 0 255 255 255 0 0 0\n");
+
+            writer.close();
 
             System.out.println("Image PPM créée avec succès !");
         } catch (IOException e) {
