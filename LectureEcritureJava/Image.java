@@ -1,3 +1,4 @@
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -41,4 +42,20 @@ public class Image {
 
         writer.close();
     }
+
+    public void save_binaire(String filename) throws IOException {
+        FileOutputStream writer = new FileOutputStream(filename);
+
+        String header = "P6\n" + width + " " + height + "\n255\n";
+        writer.write(header.getBytes());
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                writer.write(pixels[y][x][0]);
+                writer.write(pixels[y][x][1]);
+                writer.write(pixels[y][x][2]);
+            }
+        }
+
+    writer.close();
 }
