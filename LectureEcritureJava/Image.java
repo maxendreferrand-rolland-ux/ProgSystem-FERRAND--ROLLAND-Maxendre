@@ -58,4 +58,5 @@ public class Image {
         }
 
     writer.close();
+    }
 }
