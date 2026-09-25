@@ -66,4 +66,26 @@ public class Utils {
 
         return valeur1 | valeur2 | valeur3 | valeur4 | valeur5 | valeur6 | valeur7 | valeur8;
     }
+
+    public static int writeString(byte[] memory, int offset, String str, int maxLength) {
+        byte[] valeurOctets = str.getBytes();
+        int longueurACopier = Math.min(valeurOctets.length, maxLength);
+
+        for (int i = 0; i < longueurACopier; i++) {
+            memory[offset + i] = valeurOctets[i];
+        }
+        for (int i = longueurACopier; i < maxLength; i++) {
+            memory[offset + i] = 0;
+        }
+
+        return maxLength;
+    }
+
+        public static String readString(byte[] memory, int offset, int maxLength) {
+        int longueur = 0;
+        while (longueur < maxLength && memory[offset + longueur] != 0) {
+            longueur++;
+        }
+        return new String(memory, offset, longueur);
+    }
 }
