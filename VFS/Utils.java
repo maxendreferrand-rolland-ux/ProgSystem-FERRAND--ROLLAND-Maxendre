@@ -6,7 +6,7 @@ public class Utils {
         memory[offset + 2] = (byte) (value >> 8) ;
         memory[offset + 3] = (byte) value ; 
 
-        return memory; 
+        return 4; 
     }
 
     public static int readInt(byte[] memory, int offset) {
@@ -14,31 +14,24 @@ public class Utils {
         int valeur2;
         int valeur3;
         int valeur4;
-        int valeurFinale;
 
-        valeur1 = (int) memory[offset + 3](valeur1);
-        valeur1 = valeur1 << 24;
-
-        valeur2 = (int) memory[offset + 2](valeur2);
-        valeur2 = valeur2 << 16;
-
-        valeur3 = (int) memory[offset + 3](valeur3);
-        valeur3 = valeur3 << 8;
-
-        valeur4 = (int) memory[offset + 2](valeur4);
+        valeur1 = (int) (memory[offset] & 0xFF)<< 24;
+        valeur2 = (int) (memory[offset] & 0xFF)<< 24;
+        valeur3 = (int) (memory[offset] & 0xFF)<< 24;
+        valeur4 = (int) (memory[offset] & 0xFF)<< 24;
         
-        valeurFinale = valeur1 | valeur2 | valeur3 |valeur4 ;
-        return valeurFinale;
+        return valeur1 | valeur2 | valeur3 | valeur4 ;
     }
 
     public static int writeShort(byte[] memory, int offset, short value) {
-        memory[offset]     = (byte) (value >> 8);
-        memory[offset + 1] = (byte) value;
+        memory[offset]     = (byte) ((value >> 8)& 0xFF);
+        memory[offset + 1] = (byte) (value & & 0xFF);
         return 2;
     }
 
     public static short readShort(byte[] memory, int offset) {
-        return (short) (((memory[offset] & 0xFF) << 8) |
-                (memory[offset + 1] & 0xFF));
+        int valeur1 = (memory[offset] & 0xFF) << 8;
+        int valeur2 = memory[offset + 1] & 0xFF;
+        return (short) (valeur1 | valeur2);
     }
 }
