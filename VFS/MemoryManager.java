@@ -96,7 +96,7 @@ public class MemoryManager {
 
         for (int indice = 129; indice < NUM_BLOCKS; indice++) {
             if (isBlockUsed(indice) == 0) {
-                setBlockUsed(indice, true);
+                setBlockUsed(indice, true); 
                 
                 return indice;
             }
