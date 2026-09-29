@@ -74,7 +74,7 @@ public class MemoryManager {
         if (used) {
             memory[offset] |= (byte) (0b00000001 << positionBit);
         } else {
-            memory[offset] &= (byte) ~(0b00000001 << positionBit);
+            memory[offset] &= (byte) ~(0b00000001 << positionBit); // on peut utiliser xor (^) plutot que ~ mais cela revient au même 
         }
 
         return true;
