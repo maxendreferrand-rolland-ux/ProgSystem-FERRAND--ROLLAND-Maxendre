@@ -26,7 +26,7 @@ public class Utils {
     public static int writeShort(byte[] memory, int offset, short value) {
 
         memory[offset] = (byte) ((value >> 8)& 0xFF);
-        memory[offset + 1] = (byte) (value & & 0xFF);
+        memory[offset + 1] = (byte) (value & 0xFF);
 
         return 2;
     }
