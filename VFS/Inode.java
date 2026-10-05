@@ -19,15 +19,13 @@ public class Inode {
     }
 
     public int getFileType() {
-        // TODO:
-        // Lire le type à offset + 4.
-        return 0;
+        byte[] memory = memoryManager.getFilesystemMemory();
+        return Utils.readInt(memory, getInodeOffset() + 4);
     }
 
     public int getFileSize() {
-        // TODO:
-        // Lire la taille à offset + 8.
-        return 0;
+        byte[] memory = memoryManager.getFilesystemMemory();
+        return Utils.readInt(memory, getInodeOffset() + 8);
     }
 
     public int[] getDirectPointers() {
@@ -38,8 +36,7 @@ public class Inode {
         int[] pointers =
                 new int[DIRECT_POINTERS];
 
-        // TODO:
-        // Lire les 10 pointeurs directs.
+        int offset = getInodeOffset() + 28;
 
         return pointers;
     }
