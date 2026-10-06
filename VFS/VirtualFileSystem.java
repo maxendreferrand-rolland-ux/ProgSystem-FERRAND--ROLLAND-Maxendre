@@ -39,7 +39,7 @@ public class VirtualFileSystem {
         Inode inode = new Inode(memoryManager, inodeNum);
         
         long maintenant = System.currentTimeMillis();
-        
+
         inode.writeToMemory(1, 0, maintenant, maintenant, 
                 new int[Inode.DIRECT_POINTERS], 0, (short) 0, 1);
         return true;
@@ -47,5 +47,69 @@ public class VirtualFileSystem {
 
     public MemoryManager getMemoryManager() {
         return memoryManager;
+    }
+
+    public boolean writeFile(
+            int inodeNum,
+            byte[] data) {
+
+        int blocksNeeded =
+                (data.length
+                + MemoryManager.BLOCK_SIZE - 1)
+                / MemoryManager.BLOCK_SIZE;
+
+        if (blocksNeeded > Inode.DIRECT_POINTERS) {
+            return false;
+        }
+
+        int[] blockPointers =
+                new int[Inode.DIRECT_POINTERS];
+        // TODO:
+        // Allouer blocksNeeded blocs.
+
+        byte[] memory =
+                memoryManager.getFilesystemMemory();
+
+        int bytesRemaining =
+                data.length;
+
+        int dataSrcOffset = 0;
+
+        // TODO:
+        // Pour chaque bloc :
+        // - calculer la quantité à copier ;
+        // - récupérer le numéro du bloc ;
+        // - calculer son offset physique ;
+        // - copier les données.
+        // TODO:
+        // Mettre à jour l'inode.
+
+        return true;
+    }
+    
+    public byte[] readFile(int inodeNum) {
+
+        Inode inode =
+                new Inode(memoryManager, inodeNum);
+
+        int fileSize =
+                inode.getFileSize();
+
+        if (fileSize == 0) {
+            return new byte[0];
+        }
+        byte[] fileData =
+                new byte[fileSize];
+
+        byte[] memory =
+                memoryManager.getFilesystemMemory();
+
+        int[] blockPointers =
+                inode.getDirectPointers();
+        // TODO:
+        // Parcourir les blocs utilisés.
+        // Copier chaque fragment vers fileData.
+
+        return fileData;
     }
 }
