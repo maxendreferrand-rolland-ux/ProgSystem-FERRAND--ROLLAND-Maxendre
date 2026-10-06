@@ -65,9 +65,15 @@ public class Inode {
         // 5. Modification
         curseur = curseur + Utils.writeInt(memory, curseur, modificationTime);
         // 6. 10 pointeurs directs
+        for (int indice = 0; indice < DIRECT_POINTERS; indice++) {
+            curseur += Utils.writeInt(memory, curseur, directPointers[indice]);
+        } 
         // 7. Pointeur indirect
+        curseur = curseur + Utils.writeInt(memory, curseur, indirectPointer);
         // 8. Permissions
-         // 9. Nombre de liens
+        curseur = curseur + Utils.writeInt(memory, curseur, permissions);
+        // 9. Nombre de liens
+        curseur = curseur + Utils.writeInt(memory, curseur, linkCount);
     }
 
 }
