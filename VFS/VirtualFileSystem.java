@@ -64,8 +64,12 @@ public class VirtualFileSystem {
 
         int[] blockPointers =
                 new int[Inode.DIRECT_POINTERS];
-        // TODO:
+
         // Allouer blocksNeeded blocs.
+
+        for (int indice = 0; indice < blocksNeeded; indice++) {
+                blockPointers[indice] = memoryManager.allocateBlock();
+        }
 
         byte[] memory =
                 memoryManager.getFilesystemMemory();
@@ -75,14 +79,26 @@ public class VirtualFileSystem {
 
         int dataSrcOffset = 0;
 
-        // TODO:
-        // Pour chaque bloc :
-        // - calculer la quantité à copier ;
-        // - récupérer le numéro du bloc ;
-        // - calculer son offset physique ;
-        // - copier les données.
-        // TODO:
+        // Pour chaque bloc : calculer la quantité à copier,
+        // récupérer son offset physique, copier les données.
+
+        for (int indice = 0; indice < blocksNeeded; indice++) {
+                int quantiteACopier = Math.min(bytesRemaining, MemoryManager.BLOCK_SIZE);
+                int blockOffset = blockPointers[indice] * MemoryManager.BLOCK_SIZE;
+
+                System.arraycopy(data, dataSrcOffset, memory, blockOffset, quantiteACopier);
+
+                dataSrcOffset += quantiteACopier;
+                bytesRemaining -= quantiteACopier;
+        }
+
         // Mettre à jour l'inode.
+        Inode inode = new Inode(memoryManager, inodeNum);
+        long maintenant = System.currentTimeMillis();
+
+        inode.writeToMemory(
+                1, data.length, maintenant, maintenant,
+                blockPointers, 0, (short) 0, 1);
 
         return true;
     }
@@ -106,10 +122,57 @@ public class VirtualFileSystem {
 
         int[] blockPointers =
                 inode.getDirectPointers();
-        // TODO:
+        
+        int blocksUsed =
+                (fileSize + MemoryManager.BLOCK_SIZE - 1)
+                / MemoryManager.BLOCK_SIZE;
+
+        int bytesRemaining = fileSize;
+        int destOffset = 0;
+
         // Parcourir les blocs utilisés.
         // Copier chaque fragment vers fileData.
 
+
+        for (int indice = 0; indice < blocksUsed; indice++) {
+            int quantiteACopier = Math.min(bytesRemaining, MemoryManager.BLOCK_SIZE);
+            int blockOffset = blockPointers[indice] * MemoryManager.BLOCK_SIZE;
+
+            System.arraycopy(memory, blockOffset, fileData, destOffset, quantiteACopier);
+
+            destOffset += quantiteACopier;
+            bytesRemaining -= quantiteACopier;
+        }
+
         return fileData;
+    }
+    public boolean deleteFile(int inodeNum) {
+        
+        Inode inode =
+                new Inode(memoryManager, inodeNum);
+
+        int fileSize = inode.getFileSize();
+
+        if (fileSize == 0) {
+                return false; // rien à supprimer
+        }
+
+        int blocksUsed =
+                (fileSize + MemoryManager.BLOCK_SIZE - 1)
+                        / MemoryManager.BLOCK_SIZE;
+
+        int[] blockPointers = inode.getDirectPointers();
+
+        // Libérer les blocs qu'occupait le fichier dans le bitmap.
+        for (int indice = 0; indice < blocksUsed; indice++) {
+                memoryManager.setBlockUsed(blockPointers[indice], false);
+        }
+
+        // Réinitialiser l'inode : type 0 = libre, taille 0.
+        inode.writeToMemory(
+                0, 0, 0L, 0L,new int[Inode.DIRECT_POINTERS],
+                0, (short) 0, 0);
+
+        return true;
     }
 }

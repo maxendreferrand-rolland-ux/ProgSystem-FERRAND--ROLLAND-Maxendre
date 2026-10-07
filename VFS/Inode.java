@@ -49,11 +49,11 @@ public class Inode {
         int indirectPointer,
         short permissions,
         int linkCount) {
+            
         byte[] memory =
         memoryManager.getFilesystemMemory();
-        int offset = getInodeOffset();
         
-        int curseur = offset;
+        int curseur = getInodeOffset();
         // 1. Numéro d'inode
         curseur = curseur + Utils.writeInt(memory, curseur, inodeNumber);
         // 2. Type

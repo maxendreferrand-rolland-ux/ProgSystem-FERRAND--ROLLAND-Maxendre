@@ -4,6 +4,11 @@ public class TestRunner {
         testStep3();
         testStep4();
         testStep5();
+        testStep6();
+        testStep7();
+        testStep8();
+        testStep9();
+        testStep10();
     }
 
     public static void testStep2() {
@@ -195,194 +200,200 @@ public class TestRunner {
         System.out.println("[OK] Étape 5 validée !");
     }
     public static void testStep6() {
-    System.out.println("=== TEST ÉTAPE 6 : Adressage Inode ===");
 
-    MemoryManager mm = new MemoryManager();
+        System.out.println("=== TEST ÉTAPE 6 : Adressage Inode ===");
 
-    Inode inode = new Inode(mm, 4);
+        MemoryManager mm = new MemoryManager();
 
-    int expectedOffset =
-            MemoryManager.INODE_TABLE_OFFSET
-            + (4 * Inode.INODE_SIZE);
+        Inode inode = new Inode(mm, 4);
 
-    assert inode.getInodeOffset() == expectedOffset :
-            "Offset d'inode incorrect";
+        int expectedOffset =
+                MemoryManager.INODE_TABLE_OFFSET
+                + (4 * Inode.INODE_SIZE);
 
-    System.out.println("[OK] Étape 6 validée !");
+        assert inode.getInodeOffset() == expectedOffset :
+                "Offset d'inode incorrect";
+
+        System.out.println("[OK] Étape 6 validée !");
+
     }
 
     public static void testStep7() {
-    System.out.println("=== TEST ÉTAPE 7 : Sérialisation Inode ===");
+        System.out.println("=== TEST ÉTAPE 7 : Sérialisation Inode ===");
 
-    MemoryManager mm = new MemoryManager();
+        MemoryManager mm = new MemoryManager();
 
-    Inode inode = new Inode(mm, 2);
+        Inode inode = new Inode(mm, 2);
 
-    int[] ptrs = new int[] {
-        150, 151, 0, 0, 0,
-        0, 0, 0, 0, 0
-    };
+        int[] ptrs = new int[] {
+                150, 151, 0, 0, 0,
+                0, 0, 0, 0, 0
+        };
 
-    long creation = 0x0102030405060708L;
-    long modification = 0x1112131415161718L;
+        long creation = 0x0102030405060708L;
+        long modification = 0x1112131415161718L;
 
-    inode.writeToMemory(
-            1,
-            1024,
-            creation,
-            modification,
-            ptrs,
-            777,
-            (short) 0644,
-            3);
+        inode.writeToMemory(
+                1,
+                1024,
+                creation,
+                modification,
+                ptrs,
+                777,
+                (short) 0644,
+                3);
 
-    byte[] memory =
-            mm.getFilesystemMemory();
+        byte[] memory =
+                mm.getFilesystemMemory();
 
-    int offset = inode.getInodeOffset();
+        int offset = inode.getInodeOffset();
 
-    assert (memory[offset] & 0xFF) == 0x00;
-    assert (memory[offset + 3] & 0xFF) == 0x02;
+        assert (memory[offset] & 0xFF) == 0x00;
+        assert (memory[offset + 3] & 0xFF) == 0x02;
 
-    assert Utils.readInt(memory, offset + 4) == 1;
-    assert Utils.readInt(memory, offset + 8) == 1024;
+        assert Utils.readInt(memory, offset + 4) == 1;
+        assert Utils.readInt(memory, offset + 8) == 1024;
 
-    assert (memory[offset + 12] & 0xFF) == 0x01;
-    assert (memory[offset + 13] & 0xFF) == 0x02;
-    assert (memory[offset + 14] & 0xFF) == 0x03;
-    assert (memory[offset + 15] & 0xFF) == 0x04;
-    assert (memory[offset + 16] & 0xFF) == 0x05;
-    assert (memory[offset + 17] & 0xFF) == 0x06;
-    assert (memory[offset + 18] & 0xFF) == 0x07;
-    assert (memory[offset + 19] & 0xFF) == 0x08;
+        assert (memory[offset + 12] & 0xFF) == 0x01;
+        assert (memory[offset + 13] & 0xFF) == 0x02;
+        assert (memory[offset + 14] & 0xFF) == 0x03;
+        assert (memory[offset + 15] & 0xFF) == 0x04;
+        assert (memory[offset + 16] & 0xFF) == 0x05;
+        assert (memory[offset + 17] & 0xFF) == 0x06;
+        assert (memory[offset + 18] & 0xFF) == 0x07;
+        assert (memory[offset + 19] & 0xFF) == 0x08;
 
-    assert Utils.readLong(
-            memory,
-            offset + 12) == creation;
+        assert Utils.readLong(
+                memory,
+                offset + 12) == creation;
 
-    assert Utils.readLong(
-            memory,
-            offset + 20) == modification;
+        assert Utils.readLong(
+                memory,
+                offset + 20) == modification;
 
-    assert Utils.readInt(
-            memory,
-            offset + 28) == 150;
+        assert Utils.readInt(
+                memory,
+                offset + 28) == 150;
 
-    assert Utils.readInt(
-            memory,
-            offset + 32) == 151;
+        assert Utils.readInt(
+                memory,
+                offset + 32) == 151;
 
-    assert Utils.readInt(
-            memory,
-            offset + 68) == 777;
+        assert Utils.readInt(
+                memory,
+                offset + 68) == 777;
 
-    assert Utils.readShort(
-            memory,
-            offset + 72) == (short) 0644;
+        assert Utils.readShort(
+                memory,
+                offset + 72) == (short) 0644;
 
-    assert Utils.readInt(
-            memory,
-            offset + 74) == 3;
+        assert Utils.readInt(
+                memory,
+                offset + 74) == 3;
 
-    assert inode.getFileType() == 1;
-    assert inode.getFileSize() == 1024;
+        assert inode.getFileType() == 1;
+        assert inode.getFileSize() == 1024;
 
-    int[] result =
-            inode.getDirectPointers();
+        int[] result =
+                inode.getDirectPointers();
 
-    assert result[0] == 150;
-    assert result[1] == 151;
+        assert result[0] == 150;
+        assert result[1] == 151;
 
-    System.out.println("[OK] Étape 7 validée !");
+        System.out.println("[OK] Étape 7 validée !");
     }
+
     public static void testStep8() {
-    System.out.println("=== TEST ÉTAPE 8 : Création Fichier ===");
 
-    VirtualFileSystem vfs =
-            new VirtualFileSystem();
+        System.out.println("=== TEST ÉTAPE 8 : Création Fichier ===");
 
-    boolean ok1 =
-            vfs.createFile("/", "fichier1.txt");
+        VirtualFileSystem vfs =
+                new VirtualFileSystem();
 
-    boolean ok2 =
-            vfs.createFile("/", "fichier2.txt");
+        boolean ok1 =
+                vfs.createFile("/", "fichier1.txt");
 
-    assert ok1 :
-            "La création du premier fichier a échoué";
+        boolean ok2 =
+                vfs.createFile("/", "fichier2.txt");
 
-    assert ok2 :
-            "La création du second fichier a échoué";
+        assert ok1 :
+                "La création du premier fichier a échoué";
 
-    MemoryManager mm =
-            vfs.getMemoryManager();
+        assert ok2 :
+                "La création du second fichier a échoué";
 
-    Inode inode0 =
-            new Inode(mm, 0);
+        MemoryManager mm =
+                vfs.getMemoryManager();
 
-    Inode inode1 =
-            new Inode(mm, 1);
+        Inode inode0 =
+                new Inode(mm, 0);
 
-    assert inode0.getFileType() == 1 :
-            "L'inode 0 doit représenter un fichier";
+        Inode inode1 =
+                new Inode(mm, 1);
 
-    assert inode1.getFileType() == 1 :
-            "L'inode 1 doit représenter un fichier";
+        assert inode0.getFileType() == 1 :
+                "L'inode 0 doit représenter un fichier";
 
-    assert inode0.getFileSize() == 0 :
-            "Le premier fichier doit être vide";
+        assert inode1.getFileType() == 1 :
+                "L'inode 1 doit représenter un fichier";
 
-    assert inode1.getFileSize() == 0 :
-            "Le second fichier doit être vide";
+        assert inode0.getFileSize() == 0 :
+                "Le premier fichier doit être vide";
 
-    System.out.println("[OK] Étape 8 validée !");
-    }
+        assert inode1.getFileSize() == 0 :
+                "Le second fichier doit être vide";
+
+        System.out.println("[OK] Étape 8 validée !");
+        }
+
     public static void testStep9() {
-    System.out.println("=== TEST ÉTAPE 9 : Entrées/Sorties Fichier ===");
 
-    VirtualFileSystem vfs =
-            new VirtualFileSystem();
+        System.out.println("=== TEST ÉTAPE 9 : Entrées/Sorties Fichier ===");
 
-    assert vfs.createFile(
-            "/",
-            "test.txt");
+        VirtualFileSystem vfs =
+                new VirtualFileSystem();
 
-    String text =
-            "Contenu de test du système de fichiers";
+        assert vfs.createFile(
+                "/",
+                "test.txt");
 
-    byte[] original =
-            text.getBytes();
+        String text =
+                "Contenu de test du système de fichiers";
 
-    boolean writeOk =
-            vfs.writeFile(0, original);
+        byte[] original =
+                text.getBytes();
 
-    assert writeOk :
-            "Erreur d'écriture";
+        boolean writeOk =
+                vfs.writeFile(0, original);
 
-    Inode inode =
-            new Inode(
-                    vfs.getMemoryManager(),
-                    0);
+        assert writeOk :
+                "Erreur d'écriture";
 
-    assert inode.getFileSize()
-            == original.length :
-            "Taille d'inode incorrecte";
+        Inode inode =
+                new Inode(
+                        vfs.getMemoryManager(),
+                        0);
 
-    byte[] readBytes =
-            vfs.readFile(0);
+        assert inode.getFileSize()
+                == original.length :
+                "Taille d'inode incorrecte";
 
-    assert readBytes != null :
-            "Buffer lu nul";
+        byte[] readBytes =
+                vfs.readFile(0);
 
-    assert readBytes.length
-            == original.length :
-            "Longueur lue incorrecte";
+        assert readBytes != null :
+                "Buffer lu nul";
 
-    for (int i = 0; i < original.length; i++) {
-        assert readBytes[i] == original[i] :
-                "Octet incorrect à l'indice " + i;
-    }
+        assert readBytes.length
+                == original.length :
+                "Longueur lue incorrecte";
 
-    System.out.println("[OK] Étape 9 validée !");
+        for (int i = 0; i < original.length; i++) {
+                assert readBytes[i] == original[i] :
+                        "Octet incorrect à l'indice " + i;
+        }
+
+        System.out.println("[OK] Étape 9 validée !");
     }
 
 
