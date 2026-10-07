@@ -38,6 +38,10 @@ public class Inode {
 
         int offset = getInodeOffset() + 28; //num(4)+type(4)+taille(4)+création(8)+modif(4)
 
+        for (int indice = 0; indice < DIRECT_POINTERS; indice++) {
+            pointers[indice] = Utils.readInt(memory, offset + indice * 4);
+        }
+
         return pointers;
     }
     public void writeToMemory(
@@ -61,9 +65,9 @@ public class Inode {
         // 3. Taille
         curseur = curseur + Utils.writeInt(memory, curseur, fileSize);
         // 4. Création
-        curseur = curseur + Utils.writeInt(memory, curseur, creationTime);
+        curseur = curseur + Utils.writeLong(memory, curseur, creationTime);
         // 5. Modification
-        curseur = curseur + Utils.writeInt(memory, curseur, modificationTime);
+        curseur = curseur + Utils.writeLong(memory, curseur, modificationTime);
         // 6. 10 pointeurs directs
         for (int indice = 0; indice < DIRECT_POINTERS; indice++) {
             curseur += Utils.writeInt(memory, curseur, directPointers[indice]);
@@ -71,7 +75,7 @@ public class Inode {
         // 7. Pointeur indirect
         curseur = curseur + Utils.writeInt(memory, curseur, indirectPointer);
         // 8. Permissions
-        curseur = curseur + Utils.writeInt(memory, curseur, permissions);
+        curseur = curseur + Utils.writeShort(memory, curseur, permissions);
         // 9. Nombre de liens
         curseur = curseur + Utils.writeInt(memory, curseur, linkCount);
     }

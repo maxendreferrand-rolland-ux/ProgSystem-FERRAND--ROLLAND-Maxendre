@@ -1,0 +1,54 @@
+Question 1 : représentation binaire
+Un byte[] ne sait pas ce qu'il contient. Pour un int sur 4 octets,
+on peut mettre l'octet de poids fort en premier (big-endian) ou en dernier (little-endian),
+et rien dans la mémoire ne dit quel choix à été fait. Il faut donc fixer une règle et
+l'utiliser partout. Si writeInt écrit en big-endian et que readInt lit en little-endian,
+on relit une autre valeur : 0xF0A1B2E3 devient 0xE3B2A1F0. Tous les champs de l'inode 
+seraient faux, sans aucune erreur affiché.
+
+Question 2 : signes et octets
+En Java, un byte est signé : 0xF0 est vu comme -16. Quand on le convertit en int,
+Java recopie le bit de signe a gauche et on obtient 0xFFFFFFF0. Ces bits en trop
+abîment les autres octets au moment du |. Avec & 0xFF, on ne garde que les 8 derniers bits,
+donc on récupère bien 240 et la valeur reconstruite est juste.
+
+Question 3 : sérialisation
+Tester seulement readInt(writeInt(x)) == x ne suffit pas : si writeInt et readInt se
+trompent de la même façon (les deux en litle-endian par exemple), le test passe alors
+que le format est faux. Il faut aussi regarder directement les octets dans le tableau,
+comme dans testStep2. Pour choisir les valeurs de x, on prend des cas limites :
+0, -1, Integer.MAX_VALUE, 0x80000000, une valeur dont tous les octets ont le bit de
+poids fort à 1 (0xF0A1B2E3), plus des valeurs aléatoires. Les valeurs avec des bits
+de poids fort à 1 permettent de repérer un & 0xFF oublié.
+
+Question 4 : bitmap
+Le bitmap utilise 1 bit par bloc, alors qu'un int par bloc en prendrait 32.
+Pour N blocs, il faut N/8 octets (arrondi au supérieur). Pour 2048 blocs, ça fait 256 octets,
+ contre 8192 avec un entier par bloc. Il tient donc dans un seul bloc de 512 octets.
+
+Question 5 : layout
+On retrouve chaque structure par un calcul d'offset
+(BITMAP_OFFSET + numéro / 8, INODE_TABLE_OFFSET + n * 128...).
+Leur position doit donc être fixe et connue. Si le bitmap était déplacé sans modifier
+setBlockUsed et isBlockUsed, elles liraient et écriraient à l'ancien endroit et abîmeraient
+ce qui s'y trouve (la table des inodes, par exemple). Les blocs seraient alors mal marqués,
+et deux fichiers pourraient se retrouver sur le même bloc.
+
+Question 6 : inode
+Les métadonnées ont une taille fixe (128 octets), alors que le contenu des fichiers a une
+taille variable. En les séparant, on retrouve un inode par un simple calcul (début de la table + n × 128).
+On peut aussi stocker un fichier sur des blocs qui ne se suivent pas. L'inode ne contient pas les données :
+il contient la taille et les numéros des blocs où elles sont, ce qui suffit pour relire le fichier dans le bon ordre.
+
+Question 7 : allocation
+Les blocs 0 à 128 sont réservés au système (superbloc, bitmap, table des inodes). allocateBlock()
+commence à 129 pour ne jamais donner un de ces blocs à un fichier. Dans mon code ils sont déja
+marqués occupés à l'initialisation, donc une recherche depuis 0 les sauterait aussi.
+Mais si un seul de ces bits était mal positionné, un fichier pourrait écraser le superbloc ou 
+la table des inodes et détruire tout le système de fichiers. Commencer à 129 évite ce risque
+
+Question 8 : fragmentation
+Oui. Avec le même nombre de blocs libres (L = libre, O = occupé) :
+
+Sys A : O O O O L L L L, 4 blocs libres côte à côte
+Sys B : O L O L O L O L, 4 blocs libres séparés

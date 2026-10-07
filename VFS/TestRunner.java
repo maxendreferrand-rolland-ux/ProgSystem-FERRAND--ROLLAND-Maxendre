@@ -1,3 +1,6 @@
+import java.io.FileReader;
+import java.io.IOException;
+
 public class TestRunner {
     public static void main(String[] args) {
         testStep2();
@@ -8,7 +11,14 @@ public class TestRunner {
         testStep7();
         testStep8();
         testStep9();
-        testStep10();
+
+        if (args.length > 0) {
+        testExternalFile(args[0]);
+        } else {
+                System.out.println("[INFO] Aucun fichier externe fourni.");
+        }
+
+        System.out.println("=== TOUS LES TESTS SONT TERMINÉS ===");
     }
 
     public static void testStep2() {
@@ -161,19 +171,19 @@ public class TestRunner {
                 MemoryManager.BITMAP_OFFSET + (129 / 8);
 
         assert (mm.getFilesystemMemory()[bitmapOffset]
-                & 0xFF) == 0x02 :
+                & 0xFF) == 0x03 :
                 "Le bit du bloc 129 est incorrect";
 
         mm.setBlockUsed(130, true);
 
         assert (mm.getFilesystemMemory()[bitmapOffset]
-                & 0xFF) == 0x06 :
+                & 0xFF) == 0x07 :
                 "Les bits 129 et 130 sont incorrects";
 
         mm.setBlockUsed(130, false);
 
         assert (mm.getFilesystemMemory()[bitmapOffset]
-                & 0xFF) == 0x02 :
+                & 0xFF) == 0x03 :
                 "La libération du bloc 130 est incorrecte";
 
         MemoryManager mm2 = new MemoryManager();
@@ -396,5 +406,60 @@ public class TestRunner {
         System.out.println("[OK] Étape 9 validée !");
     }
 
+    public static void testExternalFile(String filename) {
+
+        System.out.println(
+                "=== TEST FICHIER EXTERNE ===");
+
+        StringBuilder builder =
+                new StringBuilder();
+
+        try (FileReader reader =
+                        new FileReader(filename)) {
+
+                char[] buffer =
+                        new char[1024];
+
+                int count;
+
+                while ((count =
+                        reader.read(buffer)) != -1) {
+
+                builder.append(
+                        buffer,
+                        0,
+                        count);
+                }
+        } catch (IOException e) {
+                System.err.println("Erreur de lecture : " + e.getMessage());
+                return;
+        }
+
+        // Conversion du texte en octets
+        byte[] original = builder.toString().getBytes();
+
+        VirtualFileSystem vfs = new VirtualFileSystem();
+
+        assert vfs.createFile("/", filename) :
+                "Création du fichier impossible";
+
+        assert vfs.writeFile(0, original) :
+                "Écriture refusée (fichier de plus de 10 blocs ?)";
+
+        byte[] relu = vfs.readFile(0);
+
+        assert relu.length == original.length :
+                "Longueur incorrecte : " + relu.length
+                + " au lieu de " + original.length;
+
+        // Comparaison octet par octet
+        for (int i = 0; i < original.length; i++) {
+                assert relu[i] == original[i] :
+                        "Octet incorrect à l'indice " + i;
+        }
+
+        System.out.println("[OK] Fichier externe validé ("
+                + original.length + " octets)");
+    }
 
 }
