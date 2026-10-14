@@ -1,0 +1,617 @@
+// Import D3 library
+const d3 = await import('https://cdn.jsdelivr.net/npm/d3@7/+esm');
+
+class D3GraphController {
+    constructor(container, graphType = 'd3-oriented', originalData = null) {
+        console.log('D3GraphController constructor called with:', container, graphType);
+        this.container = container;
+        this.graphType = graphType;
+        this.svg = null;
+        this.simulation = null;
+        this.isFullscreen = false;
+        this.originalData = originalData;
+        this.zoom = null;
+        this.currentTransform = null;
+        
+        this.initializeGraph();
+    }
+    
+    initializeGraph() {
+        // Use stored original data if available, otherwise parse from container
+        let dataText = this.originalData;
+        
+        if (!dataText) {
+            // Parse the data from the container's text content BEFORE clearing
+            dataText = this.container.innerHTML;
+            
+            // Fallback to container text content if no comment found
+            if (!dataText) {
+                dataText = this.container.textContent || '';
+            }
+        }
+
+        // Store the original data for fullscreen mode
+        if (!this.originalData) {
+            this.originalData = dataText;
+            this.container.setAttribute('data-original-content', dataText);
+        }
+
+        console.log('Parsing graph data:', dataText);
+        
+        // Clear any existing content
+        this.container.innerHTML = '';
+        
+        // Create SVG element
+        this.svg = d3.select(this.container)
+            .append('svg')
+            .attr('width', '100%')
+            .attr('height', this.container.classList.contains('d3-fullscreen-container') ? '90vh' : '400')
+            .style('background', '#0f0f0f');
+        
+        console.log('Parsing graph data:', dataText);
+        let links = [];
+        
+        try {
+            // Parse the data based on graph type
+            if (this.graphType === 'd3-oriented') {
+                links = this.parseOrientedGraphData(dataText);
+            } else {
+                links = this.parseBasicGraphData(dataText);
+            }
+            
+            this.createForceDirectedGraph(links);
+        } catch (error) {
+            console.error('Error parsing D3 graph data:', error);
+            this.container.innerHTML = '<p style="color: #e5e5e5; padding: 20px;">Error parsing graph data</p>' + '<p><pre>' + dataText + '</pre></p>';
+        }
+    }
+    
+    parseOrientedGraphData(dataText) {
+        // Parse the oriented graph data format
+        // Expected format: {source: "Node1", target: "Node2", type: "relationship"},
+        
+        // Extract content from HTML comments if present
+        let content = dataText;
+        const commentMatch = dataText.match(/<!--([\s\S]*?)-->/);
+        if (commentMatch) {
+            content = commentMatch[1];
+        }
+        
+        const lines = content.split('\n')
+            .filter(line => line.trim())
+            .filter(line => !line.includes('<!--') && !line.includes('-->'));
+        const links = [];
+        
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith('{') && trimmedLine.includes('source') && trimmedLine.includes('target')) {
+                try {
+                    // Handle trailing comma and parse as JSON
+                    let jsonStr = trimmedLine;
+                    if (jsonStr.endsWith(',')) {
+                        jsonStr = jsonStr.slice(0, -1);
+                    }
+                    
+                    // Convert to valid JSON format
+                    jsonStr = jsonStr.replace(/(\w+):/g, '"$1":');
+                    
+                    const link = JSON.parse(jsonStr);
+                    if (link.source && link.target) {
+                        links.push(link);
+                    }
+                } catch (e) {
+                    console.warn('Failed to parse line:', trimmedLine, e);
+                }
+            }
+        }
+        
+        console.log('Parsed links:', links);
+        return links;
+    }
+    
+    parseBasicGraphData(dataText) {
+        // For basic graphs, expect a simpler format
+        // This can be extended based on requirements
+        console.log('Parsing basic graph data:', dataText);
+        return this.parseOrientedGraphData(dataText);
+    }
+    
+    createForceDirectedGraph(links) {
+        if (!links || links.length === 0) {
+            this.container.innerHTML = '<p style="color: #e5e5e5; padding: 20px;">No valid graph data found. Please check the data format.</p>';
+            return;
+        }
+        
+        // Extract unique nodes from links
+        const nodes = {};
+        links.forEach(link => {
+            if (!nodes[link.source]) {
+                nodes[link.source] = { id: link.source, name: link.source };
+            }
+            if (!nodes[link.target]) {
+                nodes[link.target] = { id: link.target, name: link.target };
+            }
+        });
+        
+        const nodeArray = Object.values(nodes);
+        
+        // Set up the SVG
+        const width = this.container.clientWidth || 800;
+        const height = this.container.classList.contains('d3-fullscreen-container') ? 
+            window.innerHeight * 0.9 : 400;
+        
+        this.svg
+            .attr('width', width)
+            .attr('height', height);
+        
+        // Create arrow marker
+        this.svg.append('defs').append('marker')
+            .attr('id', 'arrow')
+            .attr('viewBox', '0 -5 10 10')
+            .attr('refX', 15)
+            .attr('refY', 0)
+            .attr('markerWidth', 6)
+            .attr('markerHeight', 6)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M0,-5L10,0L0,5')
+            .attr('fill', '#3b82f6');
+        
+        // Create a container group for all graph elements (links and nodes)
+        this.graphContainer = this.svg.append('g')
+            .attr('class', 'graph-container');
+        
+        // Create the force simulation
+        this.simulation = d3.forceSimulation(nodeArray)
+            .velocityDecay(0.9) // Add velocity damping to prevent excessive movement
+            .force('link', d3.forceLink(links).id(d => d.id).distance(30))
+            .force('charge', d3.forceManyBody().strength(-100))
+            .force('center', d3.forceCenter(width / 2, height / 2).strength(1))
+            .force('collision', d3.forceCollide().radius(50));
+        
+        // Create the links
+        const link = this.graphContainer.append('g')
+            .attr('class', 'links')
+            .selectAll('path')
+            .data(links)
+            .enter().append('path')
+            .attr('class', 'link')
+            .attr('stroke', '#3b82f6')
+            .attr('stroke-width', 2)
+            .attr('fill', 'none')
+            .attr('marker-end', 'url(#arrow)');
+        
+        // Create the nodes
+        const node = this.graphContainer.append('g')
+            .attr('class', 'nodes')
+            .selectAll('g')
+            .data(nodeArray)
+            .enter().append('g')
+            .attr('class', 'node')
+            .call(this.drag(this.simulation));
+        
+        // Add circles to nodes
+        node.append('circle')
+            .attr('r', 8)
+            .attr('fill', '#1a1a1a')
+            .attr('stroke', '#333')
+            .attr('stroke-width', 1.5)
+            .on('mouseover', function(event, d) {
+                d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .attr('r', 12)
+                    .attr('fill', '#374151')
+                    .attr('stroke', '#3b82f6');
+            })
+            .on('mouseout', function(event, d) {
+                d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .attr('r', 8)
+                    .attr('fill', '#1a1a1a')
+                    .attr('stroke', '#333');
+            });
+        
+        // Add labels to nodes
+        node.append('text')
+            .attr('x', 12)
+            .attr('dy', '.35em')
+            .attr('fill', '#e5e5e5')
+            .style('font-size', '11px')
+            .style('pointer-events', 'none')
+            .text(d => d.name);
+        
+        // Create path generator for curved links
+        const linkPath = d3.line()
+            .x(d => d.x)
+            .y(d => d.y)
+            .curve(d3.curveBasis);
+        
+        // Update positions on simulation tick
+        this.simulation.on('tick', () => {
+            link.attr('d', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const dr = Math.sqrt(dx * dx + dy * dy);
+                
+                // Create control points for smooth curve
+                const midX = (d.source.x + d.target.x) / 2;
+                const midY = (d.source.y + d.target.y) / 2;
+                
+                // Add some curvature perpendicular to the link direction
+                const curvature = Math.min(dr * 0.3, 30);
+                const perpX = -dy / dr * curvature;
+                const perpY = dx / dr * curvature;
+                
+                return `M${d.source.x},${d.source.y} Q${midX + perpX},${midY + perpY} ${d.target.x},${d.target.y}`;
+            });
+            
+            node
+                .attr('transform', d => `translate(${d.x},${d.y})`);
+        });
+        
+        // Initialize pan and zoom functionality
+        this.initializePanAndZoom();
+    }
+    
+    drag(simulation) {
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+        
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+        
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+        
+        return d3.drag()
+            .on('start', dragstarted)
+            .on('drag', dragged)
+            .on('end', dragended);
+    }
+    
+    initializePanAndZoom() {
+        // Create zoom behavior
+        this.zoom = d3.zoom()
+            .scaleExtent([0.3, 4])
+            .on('zoom', (event) => {
+                this.currentTransform = event.transform;
+                this.graphContainer.attr('transform', event.transform);
+            });
+        
+        this.svg.call(this.zoom);
+        
+        // Add reset and fullscreen buttons
+        this.createResetButton();
+        this.createFullscreenButton();
+        
+        // In fullscreen mode, add on-screen zoom controls similar to Mermaid
+        if (this.container.classList.contains('d3-fullscreen-container')) {
+            this.createZoomControls();
+        }
+        this.resetView();
+    }
+    
+    createResetButton() {
+        const resetButton = document.createElement('button');
+        resetButton.innerHTML = '⟲';
+        resetButton.title = 'Reset View';
+        resetButton.classList.add('d3-reset-btn');
+        
+        resetButton.addEventListener('click', () => this.resetView());
+        this.container.parentElement.appendChild(resetButton);
+    }
+    
+    createFullscreenButton() {
+        const fullscreenButton = document.createElement('button');
+        fullscreenButton.innerHTML = '⛶';
+        fullscreenButton.title = 'Fullscreen';
+        fullscreenButton.classList.add('d3-fullscreen-btn');
+        
+        fullscreenButton.addEventListener('click', () => this.toggleFullscreen());
+        this.container.parentElement.appendChild(fullscreenButton);
+    }
+    
+    createZoomControls() {
+        const zoomContainer = document.createElement('div');
+        zoomContainer.classList.add('d3-zoom-controls');
+        zoomContainer.style.cssText = `
+                position: absolute;
+                top: 60px;
+                left: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                z-index: 20001;
+            `;
+        
+        const baseBtnStyles = `
+                width: 36px;
+                height: 36px;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(8px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                color: white;
+                font-size: 18px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            `;
+        
+        const zoomInBtn = document.createElement('button');
+        zoomInBtn.innerHTML = '+';
+        zoomInBtn.title = 'Zoom In';
+        zoomInBtn.style.cssText = baseBtnStyles;
+        zoomInBtn.addEventListener('click', () => this.zoomIn());
+        
+        const zoomOutBtn = document.createElement('button');
+        zoomOutBtn.innerHTML = '−';
+        zoomOutBtn.title = 'Zoom Out';
+        zoomOutBtn.style.cssText = baseBtnStyles;
+        zoomOutBtn.addEventListener('click', () => this.zoomOut());
+        
+        const resetBtn = document.createElement('button');
+        resetBtn.innerHTML = '⟲';
+        resetBtn.title = 'Reset View';
+        resetBtn.style.cssText = baseBtnStyles;
+        resetBtn.addEventListener('click', () => this.resetView());
+        
+        zoomContainer.appendChild(zoomInBtn);
+        zoomContainer.appendChild(zoomOutBtn);
+        zoomContainer.appendChild(resetBtn);
+        this.container.appendChild(zoomContainer);
+    }
+    
+    resetView() {
+        // Reset zoom and pan
+        if (this.zoom) {
+            this.svg.transition().duration(300).call(
+                this.zoom.transform,
+                d3.zoomIdentity
+            );
+        }
+        
+        // Restart simulation with better positioning
+        if (this.simulation) {
+            // Reset all node positions to center
+            const nodes = this.simulation.nodes();
+            const width = this.container.clientWidth || 800;
+            const height = this.container.classList.contains('d3-fullscreen-container') ? 
+                window.innerHeight * 0.9 : 400;
+            
+            nodes.forEach(node => {
+                node.x = width / 2 + (Math.random() - 0.5) * 100;
+                node.y = height / 2 + (Math.random() - 0.5) * 100;
+            });
+            
+            // Restart simulation
+            this.simulation.alpha(1).restart();
+        }
+    }
+    
+    zoomIn() {
+        if (!this.zoom) return;
+        const node = this.svg.node();
+        const rect = node.getBoundingClientRect();
+        const center = [rect.width / 2, rect.height / 2];
+        this.svg.transition().duration(150).call(this.zoom.scaleBy, 1.2, center);
+    }
+    
+    zoomOut() {
+        if (!this.zoom) return;
+        const node = this.svg.node();
+        const rect = node.getBoundingClientRect();
+        const center = [rect.width / 2, rect.height / 2];
+        this.svg.transition().duration(150).call(this.zoom.scaleBy, 1 / 1.2, center);
+    }
+    
+    findConnectedComponents(nodes, links) {
+        const visited = new Set();
+        const components = [];
+        
+        for (const node of nodes) {
+            if (!visited.has(node.id)) {
+                const component = [];
+                this.dfs(node, visited, component, links);
+                components.push(component);
+            }
+        }
+        
+        return components;
+    }
+    
+    dfs(node, visited, component, links) {
+        visited.add(node.id);
+        component.push(node);
+        
+        // Find all connected nodes
+        for (const link of links) {
+            if (link.source.id === node.id && !visited.has(link.target.id)) {
+                this.dfs(link.target, visited, component, links);
+            } else if (link.target.id === node.id && !visited.has(link.source.id)) {
+                this.dfs(link.source, visited, component, links);
+            }
+        }
+    }
+    
+    positionComponents(components) {
+        const width = this.container.clientWidth || 800;
+        const height = this.container.classList.contains('d3-fullscreen-container') ? 
+            window.innerHeight * 0.9 : 400;
+        
+        // Sort components by size (largest first)
+        components.sort((a, b) => b.length - a.length);
+        
+        // Calculate grid layout
+        const cols = Math.ceil(Math.sqrt(components.length));
+        const rows = Math.ceil(components.length / cols);
+        const cellWidth = width / cols;
+        const cellHeight = height / rows;
+        
+        components.forEach((component, index) => {
+            const row = Math.floor(index / cols);
+            const col = index % cols;
+            const centerX = col * cellWidth + cellWidth / 2;
+            const centerY = row * cellHeight + cellHeight / 2;
+            
+            // Position nodes in this component around the center
+            component.forEach((node, nodeIndex) => {
+                const angle = (nodeIndex / component.length) * 2 * Math.PI;
+                const radius = Math.min(cellWidth, cellHeight) * 0.3;
+                node.x = centerX + Math.cos(angle) * radius;
+                node.y = centerY + Math.sin(angle) * radius;
+                node.fx = node.x;
+                node.fy = node.y;
+            });
+        });
+        
+        // Release fixed positions after a short delay
+        setTimeout(() => {
+            components.forEach(component => {
+                component.forEach(node => {
+                    node.fx = null;
+                    node.fy = null;
+                });
+            });
+        }, 1000);
+    }
+    
+    toggleFullscreen() {
+        if (this.isFullscreen) {
+            this.exitFullscreen();
+        } else {
+            this.enterFullscreen();
+        }
+    }
+    
+    enterFullscreen() {
+        // Create modal overlay
+        this.modal = document.createElement('div');
+        this.modal.classList.add('d3-fullscreen-modal');
+        
+        // Create close button
+        const closeButton = document.createElement('button');
+        closeButton.innerHTML = '✕';
+        closeButton.title = 'Close Fullscreen';
+        closeButton.classList.add('d3-close-btn');
+        closeButton.addEventListener('click', () => this.exitFullscreen());
+        
+        // Clone the container for fullscreen
+        this.fullscreenContainer = this.container.cloneNode(true);
+        this.fullscreenContainer.classList.add('d3-fullscreen-container');
+        
+        this.modal.appendChild(closeButton);
+        this.modal.appendChild(this.fullscreenContainer);
+        document.body.appendChild(this.modal);
+        
+        // Get the original data that was used to create this graph
+        const originalData = this.originalData || this.container.getAttribute('data-original-content');
+        
+        // Initialize new D3 controller for fullscreen with original data
+        this.fullscreenController = new D3GraphController(this.fullscreenContainer, this.graphType, originalData);
+        
+        // Add keyboard event listener
+        this.modal.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.exitFullscreen();
+            } else if (e.key === '+' || e.key === '=') {
+                e.preventDefault();
+                if (this.fullscreenController) this.fullscreenController.zoomIn();
+            } else if (e.key === '-') {
+                e.preventDefault();
+                if (this.fullscreenController) this.fullscreenController.zoomOut();
+            } else if (e.key === '0') {
+                e.preventDefault();
+                if (this.fullscreenController) this.fullscreenController.resetView();
+            }
+        });
+        
+        // Focus the modal to capture keyboard events
+        this.modal.focus();
+        this.modal.setAttribute('tabindex', '-1');
+        
+        this.isFullscreen = true;
+        
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+    }
+    
+    exitFullscreen() {
+        if (this.modal) {
+            document.body.removeChild(this.modal);
+            this.modal = null;
+            this.fullscreenContainer = null;
+            this.fullscreenController = null;
+        }
+        
+        this.isFullscreen = false;
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
+    }
+}
+
+// Initialize D3 functionality with retry mechanism
+initializeD3WithRetry();
+
+function initializeD3WithRetry() {
+    // Initial attempt
+    initializeD3();
+    
+    // Retry after delays to catch late-rendering graphs
+    setTimeout(() => initializeD3(), 100);
+    setTimeout(() => initializeD3(), 500);
+    setTimeout(() => initializeD3(), 1000);
+    
+    // Set up mutation observer for dynamically added graphs
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    if (node.classList && node.classList.contains('d3-graph')) {
+                        setTimeout(() => initializeD3(), 100);
+                    }
+                    const d3Containers = node.querySelectorAll ? 
+                        node.querySelectorAll('.d3-graph[data-pan="true"]') : [];
+                    if (d3Containers.length > 0) {
+                        setTimeout(() => initializeD3(), 100);
+                    }
+                }
+            });
+        });
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
+function initializeD3() {
+    // Look for both d3-graph and d3-oriented classes
+    const d3Containers = document.querySelectorAll('.d3-graph[data-pan="true"], .d3-oriented[data-pan="true"], .d3-oriented');
+    
+    console.log('Found D3 containers:', d3Containers.length);
+    
+    d3Containers.forEach(container => {
+        // Skip if already initialized
+        if (container.dataset.d3Initialized === 'true') return;
+        
+        console.log('Initializing D3 container:', container);
+        
+        const graphType = container.getAttribute('data-type') || 'd3-oriented';
+        new D3GraphController(container, graphType);
+        
+        // Mark as initialized
+        container.dataset.d3Initialized = 'true';
+    });
+} 

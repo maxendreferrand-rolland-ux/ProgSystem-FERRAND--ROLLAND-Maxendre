@@ -1,0 +1,21 @@
+// Base
+@import 'base/variables';
+@import 'base/base';
+
+// Layouts
+@import 'layouts/_header';
+@import 'layouts/_main';
+@import 'layouts/_footer';
+
+// Components
+@import 'components/_tables';
+@import 'components/_mermaid';
+@import 'components/_d3';
+@import 'components/_messages';
+@import 'components/_buttons';
+@import 'components/_collapse';
+
+// Blocks
+@import 'blocks/_course';
+@import 'blocks/_skills';
+@import 'blocks/_profile';

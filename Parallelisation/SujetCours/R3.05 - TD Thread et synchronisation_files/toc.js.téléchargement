@@ -1,0 +1,259 @@
+// Copyright Jehan-Antoine Vayssade 2025
+
+class TableOfContents {
+    constructor() {
+        this.headings = Array.from(document.querySelectorAll('h2, h3'));
+        if (this.headings.length <= 1) return;
+
+        this.idMap = {};
+        this.slugify = this.slugify.bind(this);
+        this.ensureUniqueIds();
+
+        this.tocWrapper = document.createElement('div');
+        this.tocWrapper.id = 'toc-wrapper';
+
+        this.tocTitle = document.createElement('div');
+        this.tocTitle.textContent = 'Table of Contents';
+        this.tocTitle.style.fontWeight = 'bold';
+        this.tocTitle.style.marginBottom = '0.75em';
+        this.tocTitle.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
+        this.tocWrapper.appendChild(this.tocTitle);
+
+        this.tocList = this.buildTOC();
+        this.tocWrapper.appendChild(this.tocList);
+
+        this.toggleBtn = this.createToggleBtn();
+
+        this.mainContent = document.querySelector('main#content');
+        if (this.mainContent) {
+            this.mainContent.insertBefore(this.tocWrapper, this.mainContent.firstChild);
+            this.mainContent.insertBefore(this.toggleBtn, this.mainContent.firstChild);
+        } else {
+            document.body.appendChild(this.toggleBtn);
+            document.body.appendChild(this.tocWrapper);
+        }
+
+        this.tocVisible = true;
+        this.addHighlightStyle();
+        this.handleResize = this.handleResize.bind(this);
+        window.addEventListener('resize', this.handleResize);
+        this.handleResize();
+
+        this.toggleBtn.addEventListener('click', () => this.setTOCVisibility(!this.tocVisible));
+
+        window.addEventListener('scroll', () => this.highlightTOC());
+        window.addEventListener('load', () => this.highlightTOC());
+        this.highlightTOC();
+    }
+
+    observeHeader() {
+        const header = document.getElementById('site-header');
+        if (!header) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                this.toggleBtn.style.top = entry.isIntersecting ? '2.5rem' : '1rem';
+                this.toggleBtn.style.left = entry.isIntersecting ? '2.5rem' : '1rem';
+            },
+            { threshold: 0 }
+        );
+        observer.observe(header);
+    }
+
+    slugify(text) {
+        return text.toLowerCase()
+            .replace(/[^\w]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .replace(/-{2,}/g, '-');
+    }
+
+    ensureUniqueIds() {
+        this.headings.forEach(h => {
+            if (!h.id) {
+                let baseId = this.slugify(h.textContent.trim());
+                let id = baseId;
+                let i = 1;
+                while (this.idMap[id] || document.getElementById(id)) {
+                    id = `${baseId}-${i++}`;
+                }
+                h.id = id;
+                this.idMap[id] = true;
+            }
+        });
+    }
+
+    buildTOC() {
+        let toc = document.createElement('ul');
+        toc.style.listStyle = 'none';
+        toc.style.paddingLeft = '0';
+        toc.style.marginLeft = '0';
+
+        this.headings.forEach(h => {
+            const level = parseInt(h.tagName[1]);
+            const li = document.createElement('li');
+            li.style.marginLeft = `${(level - 2) * 16}px`;
+            const a = document.createElement('a');
+            a.textContent = h.textContent;
+            a.href = `#${h.id}`;
+            a.style.textDecoration = 'none';
+            a.className = 'toc-link';
+            li.appendChild(a);
+            toc.appendChild(li);
+        });
+
+        return toc;
+    }
+
+    createToggleBtn() {
+        const btn = document.createElement('button');
+        btn.textContent = '☰ TOC';
+        btn.setAttribute('aria-label', 'Toggle Table of Contents');
+        btn.id = 'toc-toggle-btn';
+
+        this.observeHeader();
+        return btn;
+    }
+
+    setTOCStylesFixed() {
+        Object.assign(this.tocWrapper.style, {
+            position: 'fixed',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            left: '1rem',
+            width: '280px',
+            maxHeight: '70vh',
+            overflowY: 'auto',
+            background: 'rgba(19,19,19,0.98)',
+            border: '1px solid #000',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+            padding: '1rem',
+            zIndex: '9999',
+            fontFamily: 'sans-serif',
+            fontSize: '15px',
+            borderRadius: '6px',
+            transition: 'opacity 0.2s',
+            display: 'block',
+            marginTop: '0'
+        });
+    }
+
+    setTOCStylesStatic() {
+        Object.assign(this.tocWrapper.style, {
+            position: 'static',
+            top: '',
+            left: '',
+            transform: '',
+            width: '280px',
+            maxHeight: '',
+            overflowY: '',
+            background: 'rgba(19,19,19,0.98)',
+            border: '1px solid #000',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+            padding: '1rem',
+            zIndex: '',
+            fontFamily: 'sans-serif',
+            fontSize: '15px',
+            borderRadius: '6px',
+            transition: 'opacity 0.2s',
+            display: 'block',
+            margin: 'auto',
+        });
+    }
+
+    setBtnStylesFixed() {
+        Object.assign(this.toggleBtn.style, {
+            position: 'fixed',
+            transition: 'top 0.3s, left 0.3s',
+            zIndex: '10000',
+            background: '#0074d9',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '0.5em 1em',
+            fontSize: '1em',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            display: 'block',
+            marginTop: '0'
+        });
+    }
+
+    setBtnStylesStatic() {
+        Object.assign(this.toggleBtn.style, {
+            position: 'static',
+            top: '',
+            left: '',
+            zIndex: '',
+            transition: 'top 0.3s',
+            background: '#0074d9',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '0.5em 1em',
+            fontSize: '1em',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            display: 'block',
+            margin: '1em auto'
+        });
+    }
+
+    setTOCVisibility(visible) {
+        this.tocWrapper.style.display = visible ? 'block' : 'none';
+        this.tocVisible = visible;
+        localStorage.setItem('tocVisible', visible ? '1' : '0');
+    }
+
+    handleResize() {
+        const w = window.innerWidth;
+        if (w < 1700) {
+            this.setTOCStylesStatic();
+            this.setBtnStylesStatic();
+        } else {
+            this.setTOCStylesFixed();
+            this.setBtnStylesFixed();
+        }
+        const saved = localStorage.getItem('tocVisible');
+        this.setTOCVisibility(saved === null ? false : saved === '1');
+    }
+
+    addHighlightStyle() {
+        if (document.getElementById('toc-highlight-style')) return;
+        const style = document.createElement('style');
+        style.id = 'toc-highlight-style';
+        style.textContent = `
+        .toc-link.toc-active {
+            color: #fff !important;
+            background: #0074d9;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        `;
+        document.head.appendChild(style);
+    }
+
+    getTOCLinks() {
+        return Array.from(this.tocWrapper.querySelectorAll('.toc-link'));
+    }
+
+    highlightTOC() {
+        const tocLinks = this.getTOCLinks();
+        let scrollPosition = window.scrollY || window.pageYOffset;
+        let offset = 60;
+        let currentIndex = 0;
+
+        for (let i = 0; i < this.headings.length; i++)
+            if (this.headings[i].getBoundingClientRect().top + window.scrollY - offset <= scrollPosition)
+                currentIndex = i;
+
+        tocLinks.forEach((link, idx) => {
+            if (idx === currentIndex)
+                link.classList.add('toc-active');
+            else
+                link.classList.remove('toc-active');
+        });
+    }
+}
+
+new TableOfContents();
