@@ -16,7 +16,6 @@ public class CompteurDangereux {
                 // TODO: Expliquer pourquoi cette ligne pose problème
                 compteurGlobal++;  // RACE CONDITION ICI !
             }
-            System.out.println(nom + " terminé. Compteur vu : " + compteurGlobal);
         }
     }
 
