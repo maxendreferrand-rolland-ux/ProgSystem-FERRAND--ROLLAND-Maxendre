@@ -34,3 +34,5 @@ Objectif : comprendre la concurrence, les races conditions et la synchronisation
             Pourcentage réussite : 98.0
             Minimum obtenu : 3814357
             Maximum obtenu : 11111110
+
+- `CompteurSecurise` / `TestMutex` : même test, avec `compteur++` protégé par `synchronized(verrou)`. Résultat correct (50/50), mais beaucoup plus lent.
