@@ -13,7 +13,8 @@ public class CompteurDangereux {
         @Override
         public void run() {
             for (int i = 0; i < nombreIncrements; i++) {
-                // TODO: Expliquer pourquoi cette ligne pose problème
+                /* TODO: Expliquer pourquoi cette ligne pose problème : 
+                n'est pas atomique : lecture, ajout de 1, écriture.*/
                 compteurGlobal++;  // RACE CONDITION ICI !
             }
         }
