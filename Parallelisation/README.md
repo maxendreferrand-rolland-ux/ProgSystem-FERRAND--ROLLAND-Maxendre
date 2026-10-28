@@ -35,4 +35,8 @@ Objectif : comprendre la concurrence, les races conditions et la synchronisation
             Minimum obtenu : 3814357
             Maximum obtenu : 11111110
 
+<<<<<<< HEAD
 - `CompteurSecurise` / `TestMutex` : même test, avec `compteur++` protégé par `synchronized(verrou)`. Résultat correct (50/50), mais beaucoup plus lent.
+=======
+- `CompteurSecurise` / `TestMutex` : même test, avec `compteur++` protégé par `synchronized(verrou)`. Résultat correct (50/50), mais beaucoup plus lent.
+>>>>>>> 8441125b89365acd46e04bcf62d2df19ea8f4815
