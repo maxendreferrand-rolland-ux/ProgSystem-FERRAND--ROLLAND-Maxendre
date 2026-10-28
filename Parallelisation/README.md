@@ -8,18 +8,21 @@ Objectif : comprendre la concurrence, les races conditions et la synchronisation
 
 ## Resultat de `TestCompteur` : 
     ### 1 Thread : 
+            Nombre de threads : 1
             Nombre bonnes réponses : 50
             Pourcentage réussite : 100.0
             Minimum obtenu : 1111111
             Maximum obtenu : 1111111
 
     ### 2 Threads : 
+            Nombre de threads : 2
             Nombre bonnes réponses : 49
             Pourcentage réussite : 98.0
             Minimum obtenu : 1153595
             Maximum obtenu : 2222222
 
     ### 5 Threads : 
+            Nombre de threads : 5
             Nombre bonnes réponses : 48
             Pourcentage réussite : 96.0
             Minimum obtenu : 1373053
