@@ -41,7 +41,7 @@ public class TestCompteur {
             }
         }
     
-        
+        System.out.println("Nombre de threads : " + NB_THREADS);
         System.out.println("Nombre bonnes réponses : " + compteurCorrect);
         System.out.println("Pourcentage réussite : " + (float)(compteurCorrect)/50*100);
         System.out.println("Minimum obtenu : " + minimum);

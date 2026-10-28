@@ -4,4 +4,30 @@ Objectif : comprendre la concurrence, les races conditions et la synchronisation
 
 - `CalculSequentiel` / `CalculParallele` + `Calcule` : même calcul, en séquentiel puis avec un thread par valeur (`start()` puis `join()`). Chaque thread ajoute son résultat à une somme partagée protégée par `synchronized`.
 - Le parallèle n'est plus rapide que si les calculs sont longs : sinon, la création des threads coûte plus cher que le gain.
-- `CompteurDangereux` / `TestCompteur` : 9 threads incrémentent le même compteur sans protection. `compteur++` n'est pas atomique (lecture, ajout, écriture), donc des incréments se perdent et le résultat est souvent inférieur à 9 999 999.
+- `CompteurDangereux` / `TestCompteur` : 9 threads incrémentent le même compteur sans protection.
+
+## Resultat de `TestCompteur` : 
+    ### 1 Thread : 
+            Nombre bonnes réponses : 50
+            Pourcentage réussite : 100.0
+            Minimum obtenu : 1111111
+            Maximum obtenu : 1111111
+
+    ### 2 Threads : 
+            Nombre bonnes réponses : 49
+            Pourcentage réussite : 98.0
+            Minimum obtenu : 1153595
+            Maximum obtenu : 2222222
+
+    ### 5 Threads : 
+            Nombre bonnes réponses : 48
+            Pourcentage réussite : 96.0
+            Minimum obtenu : 1373053
+            Maximum obtenu : 5555555
+
+    ### 10 Threads : 
+            Nombre de threads : 10
+            Nombre bonnes réponses : 49
+            Pourcentage réussite : 98.0
+            Minimum obtenu : 3814357
+            Maximum obtenu : 11111110
